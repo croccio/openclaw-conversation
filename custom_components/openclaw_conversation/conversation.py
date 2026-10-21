@@ -26,11 +26,13 @@ from .const import (
     CONF_STRIP_EMOJI,
     CONF_SYSTEM_PROMPT,
     CONF_TIMEOUT,
+    CONF_USER_OVERRIDES,
     DEFAULT_MODEL,
     DEFAULT_SESSION_KEY,
     DEFAULT_STRIP_EMOJI,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TIMEOUT,
+    DEFAULT_USER_OVERRIDES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,6 +59,18 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         )
         self._strip_emoji = entry.options.get(CONF_STRIP_EMOJI, DEFAULT_STRIP_EMOJI)
         self._session_key = config.get(CONF_SESSION_KEY, DEFAULT_SESSION_KEY)
+
+        raw_overrides = config.get(CONF_USER_OVERRIDES, DEFAULT_USER_OVERRIDES) or ""
+        self._user_overrides = {}
+        if raw_overrides:
+            try:
+                parsed = json_mod.loads(raw_overrides)
+                if isinstance(parsed, dict):
+                    self._user_overrides = parsed
+                else:
+                    _LOGGER.warning("user_overrides must be a JSON object")
+            except (json_mod.JSONDecodeError, TypeError, ValueError):
+                _LOGGER.warning("Invalid user_overrides JSON: %s", raw_overrides)
 
         # Ensure a consistent persistent session for HA voice use.
         self._initial_welcome_sent = False
@@ -183,10 +197,30 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         """Call OpenClaw chat completions API with streaming."""
         # OpenClaw OpenAI-compatible endpoint is stateless by default.
         # Use a stable `user` and/or `x-openclaw-session-key` to keep session context.
+        # Resolve per-user overrides (model / session_key) when configured.
+        override = {}
+        uid = principal.get("user_id", "") or ""
+        if isinstance(self._user_overrides, dict):
+            if uid and isinstance(self._user_overrides.get(uid), dict):
+                override = self._user_overrides.get(uid) or {}
+            elif user_name:
+                for key in (user_name, user_name.lower()):
+                    if isinstance(self._user_overrides.get(key), dict):
+                        override = self._user_overrides.get(key) or {}
+                        break
+
+        effective_model = override.get("model") or self._model
+        if override.get("session_key"):
+            effective_session_key = override["session_key"]
+        elif uid:
+            effective_session_key = f"{self._session_key}:{uid}"
+        else:
+            effective_session_key = self._session_key
+
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
-            "x-openclaw-session-key": self._session_key,
+            "x-openclaw-session-key": effective_session_key,
             "x-openclaw-message-channel": "homeassistant",
         }
 
@@ -214,10 +248,10 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         api_messages.append({"role": "user", "content": text})
 
         payload = {
-            "model": self._model,
+            "model": effective_model,
             "messages": api_messages,
             "stream": True,
-            "user": "homeassistant",
+            "user": uid or user_name or "homeassistant",
             "language": self.hass.config.language,
             "local_date": dt_util.now().date().isoformat(),
             "conversation_id": conversation_id,

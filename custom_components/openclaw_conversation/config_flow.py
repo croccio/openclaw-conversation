@@ -18,12 +18,14 @@ from .const import (
     CONF_STRIP_EMOJI,
     CONF_SYSTEM_PROMPT,
     CONF_TIMEOUT,
+    CONF_USER_OVERRIDES,
     DEFAULT_BASE_URL,
     DEFAULT_MODEL,
     DEFAULT_SESSION_KEY,
     DEFAULT_STRIP_EMOJI,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TIMEOUT,
+    DEFAULT_USER_OVERRIDES,
     DOMAIN,
 )
 
@@ -170,6 +172,9 @@ class OpenClawConversationConfigFlow(
                         CONF_SESSION_KEY: user_input.get(
                             CONF_SESSION_KEY, DEFAULT_SESSION_KEY
                         ),
+                        CONF_USER_OVERRIDES: user_input.get(
+                            CONF_USER_OVERRIDES, DEFAULT_USER_OVERRIDES
+                        ),
                     },
                 )
 
@@ -195,6 +200,9 @@ class OpenClawConversationConfigFlow(
                     ): str,
                     vol.Optional(
                         CONF_SESSION_KEY, default=DEFAULT_SESSION_KEY
+                    ): str,
+                    vol.Optional(
+                        CONF_USER_OVERRIDES, default=DEFAULT_USER_OVERRIDES
                     ): str,
                 }
             ),
@@ -251,6 +259,15 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
                             CONF_SESSION_KEY,
                             self._config_entry.data.get(
                                 CONF_SESSION_KEY, DEFAULT_SESSION_KEY
+                            ),
+                        ),
+                    ): str,
+                    vol.Optional(
+                        CONF_USER_OVERRIDES,
+                        default=self._config_entry.options.get(
+                            CONF_USER_OVERRIDES,
+                            self._config_entry.data.get(
+                                CONF_USER_OVERRIDES, DEFAULT_USER_OVERRIDES
                             ),
                         ),
                     ): str,
