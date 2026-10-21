@@ -10,7 +10,9 @@
           "api_key": "API Token",
           "model": "Model",
           "timeout": "Timeout (seconds, 0 = no limit)",
-          "system_prompt": "System prompt"
+          "system_prompt": "System prompt",
+          "session_key": "Session key",
+          "user_overrides": "User overrides (JSON)"
         },
         "data_description": {
           "system_prompt": "Instructions sent before each conversation (e.g. keep responses short for voice)",
@@ -24,11 +26,11 @@
       "timeout": "Gateway took too long to respond during validation. Check gateway load or try again.",
       "invalid_auth": "Invalid API token.",
       "forbidden": "Access forbidden by the gateway (403). Check token scopes or gateway auth policy.",
-      "endpoint_not_found": "Endpoint /v1/chat/completions not found (404). Check the base URL — it should be the gateway root (e.g. http://host:18789), not include /v1.",
+      "endpoint_not_found": "Endpoint /v1/chat/completions not found (404). Check the base URL \u2014 it should be the gateway root (e.g. http://host:18789), not include /v1.",
       "endpoint_disabled": "Chat Completions endpoint is not enabled on the Gateway. Add gateway.http.endpoints.chatCompletions.enabled: true to your OpenClaw config.",
       "server_error": "Gateway returned a server error (5xx). Check the gateway logs.",
-      "bad_request": "Gateway rejected the request (400). Check that the model name and payload are valid — see the Home Assistant logs for the gateway response body.",
-      "model_not_available": "The configured model is not available on this OpenClaw Gateway. Try a model that exists on your gateway (e.g. 'openclaw:main')."      
+      "bad_request": "Gateway rejected the request (400). Check that the model name and payload are valid \u2014 see the Home Assistant logs for the gateway response body.",
+      "model_not_available": "The configured model is not available on this OpenClaw Gateway. Try a model that exists on your gateway (e.g. 'openclaw:main')."
     }
   },
   "options": {
@@ -39,10 +41,13 @@
           "model": "Model",
           "timeout": "Timeout (seconds, 0 = no limit)",
           "system_prompt": "System prompt",
-          "strip_emoji": "Strip emojis from responses"
+          "strip_emoji": "Strip emojis from responses",
+          "session_key": "Session key",
+          "user_overrides": "User overrides (JSON)"
         },
         "data_description": {
-          "timeout": "Set to 0 to disable the response timeout (recommended for long-running requests)"
+          "timeout": "Set to 0 to disable the response timeout (recommended for long-running requests)",
+          "user_overrides": "JSON object mapping HA user id/name to {model, session_key}"
         }
       }
     }

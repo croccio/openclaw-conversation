@@ -162,6 +162,7 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         if user is None:
             return ""
         name = getattr(user, "name", None)
+        _LOGGER.info("Resolved HA user: id=%s name=%r", user_id, name)
         return name or ""
 
     def _normalize_timeout(self, value: Any) -> int:
@@ -201,13 +202,29 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         override = {}
         uid = principal.get("user_id", "") or ""
         if isinstance(self._user_overrides, dict):
+            # Build a normalized lookup (lowercase, alphanumeric only) so that
+            # keys like "antonio.scardigno" match display names like "Antonio Scardigno".
+            normalized = {}
+            for key, value in self._user_overrides.items():
+                if isinstance(value, dict):
+                    normalized["".join(c for c in str(key).lower() if c.isalnum())] = value
             if uid and isinstance(self._user_overrides.get(uid), dict):
                 override = self._user_overrides.get(uid) or {}
-            elif user_name:
-                for key in (user_name, user_name.lower()):
-                    if isinstance(self._user_overrides.get(key), dict):
+            else:
+                lookup_keys = [uid, user_name, user_name.lower()] if user_name else [uid]
+                for key in lookup_keys:
+                    if key and isinstance(self._user_overrides.get(key), dict):
                         override = self._user_overrides.get(key) or {}
                         break
+                if not override and user_name:
+                    nkey = "".join(c for c in user_name.lower() if c.isalnum())
+                    if nkey in normalized:
+                        override = normalized[nkey] or {}
+            if not override:
+                _LOGGER.warning(
+                    "No user override matched (uid=%r, name=%r); available keys=%s",
+                    uid, user_name, list(self._user_overrides.keys()),
+                )
 
         effective_model = override.get("model") or self._model
         if override.get("session_key"):
