@@ -77,11 +77,12 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         """Process a sentence."""
         conversation_id = user_input.conversation_id or ulid.ulid_now()
         principal = self._resolve_principal(user_input)
+        user_name = await self._resolve_user_name(user_input)
 
         try:
             start = time.monotonic()
             response_text = await self._call_openclaw(
-                user_input.text, conversation_id, principal
+                user_input.text, conversation_id, principal, user_name
             )
             elapsed = time.monotonic() - start
             _LOGGER.info(
@@ -132,6 +133,23 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
             "device_id": device_id or "",
         }
 
+    async def _resolve_user_name(
+        self, user_input: conversation.ConversationInput
+    ) -> str:
+        """Resolve the display name of the HA user, if available."""
+        context = getattr(user_input, "context", None)
+        user_id = getattr(context, "user_id", None) if context else None
+        if not user_id:
+            return ""
+        try:
+            user = await self.hass.auth.async_get_user(user_id)
+        except Exception:
+            return ""
+        if user is None:
+            return ""
+        name = getattr(user, "name", None)
+        return name or ""
+
     def _normalize_timeout(self, value: Any) -> int:
         """Normalize the configured timeout to a non-negative integer."""
         try:
@@ -159,7 +177,8 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         )
 
     async def _call_openclaw(
-        self, text: str, conversation_id: str, principal: dict[str, str]
+        self, text: str, conversation_id: str, principal: dict[str, str],
+        user_name: str = "",
     ) -> str:
         """Call OpenClaw chat completions API with streaming."""
         # OpenClaw OpenAI-compatible endpoint is stateless by default.
@@ -178,6 +197,10 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
             api_messages.append(
                 {"role": "system", "content": self._system_prompt}
             )
+
+        # Prefix the HA user's name to the message sent to OpenClaw.
+        if user_name:
+            text = f"{user_name}: {text}"
 
         # One-time welcome/context priming on first HA startup.
         if not self._initial_welcome_sent:
