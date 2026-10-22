@@ -44,6 +44,23 @@
           "finish": "Finish"
         }
       },
+      "users_overrides": {
+        "title": "Users Overrides",
+        "description": "Select a user to manage their override."
+      },
+      "user_menu": {
+        "title": "User override",
+        "description": "Selected user: {user}"
+      },
+      "edit_user_values": {
+        "title": "User override values",
+        "description": "Leave a field empty to use the default value.",
+        "data": {
+          "model": "Model",
+          "session_key": "Session key",
+          "system_prompt": "System prompt"
+        }
+      },
       "defaults": {
         "title": "Default settings",
         "data": {
@@ -51,23 +68,7 @@
           "timeout": "Timeout (seconds, 0 = no limit)",
           "system_prompt": "Default System Prompt",
           "session_key": "Default Session Key",
-          "strip_emoji": "Strip emojis from responses",
-          "back": "Back to menu"
-        }
-      },
-      "users_overrides": {
-        "title": "Users Overrides",
-        "description": "Select a user to edit their override."
-      },
-      "edit_user": {
-        "title": "User override",
-        "description": "Leave a field empty to use the default value.",
-        "data": {
-          "model": "Model",
-          "session_key": "Session key",
-          "system_prompt": "System prompt",
-          "clear": "Clear override",
-          "back": "Back to users list"
+          "strip_emoji": "Strip emojis from responses"
         }
       }
     }

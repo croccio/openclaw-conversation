@@ -255,8 +255,6 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_defaults(self, user_input=None):
         """Manage default options."""
         if user_input is not None:
-            if user_input.pop("back", False):
-                return await self.async_step_init()
             self._defaults = user_input
             return await self.async_step_init()
         return self.async_show_form(
@@ -276,7 +274,6 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_STRIP_EMOJI, default=self._defaults[CONF_STRIP_EMOJI]
                     ): bool,
-                    vol.Optional("back", default=False): bool,
                 }
             ),
         )
@@ -300,25 +297,35 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
         for uid in list(self._overrides):
             if uid not in known_ids:
                 menu_options[f"user_{uid}"] = f"✓ {uid}"
-            menu_options[f"clear_{uid}"] = f"✕ Clear {self._user_label(uid, users)}"
-        menu_options["back"] = "← Back"
+        menu_options["back_to_main"] = "← Back"
         return self.async_show_menu(
             step_id="users_overrides",
             menu_options=menu_options,
         )
 
-    async def async_step_edit_user(self, user_input=None):
-        """Edit a user override."""
+    async def async_step_user_menu(self, user_input=None):
+        """Show actions for the selected user."""
+        uid = getattr(self, "_edit_uid", None)
+        if not uid:
+            return await self.async_step_users_overrides()
+        users = await self.hass.auth.async_get_users()
+        return self.async_show_menu(
+            step_id="user_menu",
+            menu_options={
+                "edit_user_values": "Edit values",
+                "clear_user": "Clear override",
+                "back_to_users": "← Back to users list",
+            },
+            description_placeholders={"user": self._user_label(uid, users)},
+        )
+
+    async def async_step_edit_user_values(self, user_input=None):
+        """Edit the values of the selected user override."""
         uid = getattr(self, "_edit_uid", None)
         if not uid:
             return await self.async_step_users_overrides()
         override = self._overrides.get(uid, {})
         if user_input is not None:
-            if user_input.pop("back", False):
-                return await self.async_step_users_overrides()
-            if user_input.pop("clear", False):
-                self._overrides.pop(uid, None)
-                return await self.async_step_users_overrides()
             new_override = {}
             if user_input.get(CONF_MODEL):
                 new_override["model"] = user_input[CONF_MODEL]
@@ -330,9 +337,9 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
                 self._overrides[uid] = new_override
             else:
                 self._overrides.pop(uid, None)
-            return await self.async_step_users_overrides()
+            return await self.async_step_user_menu()
         return self.async_show_form(
-            step_id="edit_user",
+            step_id="edit_user_values",
             data_schema=vol.Schema(
                 {
                     vol.Optional(
@@ -345,15 +352,24 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_SYSTEM_PROMPT,
                         default=override.get("system_prompt", ""),
                     ): str,
-                    vol.Optional("clear", default=False): bool,
-                    vol.Optional("back", default=False): bool,
                 }
             ),
         )
 
-    async def async_step_back(self, user_input=None):
+    async def async_step_clear_user(self, user_input=None):
+        """Clear the selected user override."""
+        uid = getattr(self, "_edit_uid", None)
+        if uid:
+            self._overrides.pop(uid, None)
+        return await self.async_step_users_overrides()
+
+    async def async_step_back_to_main(self, user_input=None):
         """Return to the main menu."""
         return await self.async_step_init()
+
+    async def async_step_back_to_users(self, user_input=None):
+        """Return to the users list."""
+        return await self.async_step_users_overrides()
 
     async def async_step_finish(self, user_input=None):
         """Finish and save."""
@@ -368,15 +384,7 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
 
             async def handler(user_input=None):
                 self._edit_uid = uid
-                return await self.async_step_edit_user(user_input)
+                return await self.async_step_user_menu()
 
             return handler
-        if name.startswith("async_step_clear_"):
-            uid = name[len("async_step_clear_"):]
-
-            async def clear_handler(user_input=None):
-                self._overrides.pop(uid, None)
-                return await self.async_step_users_overrides()
-
-            return clear_handler
         raise AttributeError(name)
