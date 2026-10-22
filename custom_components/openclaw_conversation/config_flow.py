@@ -249,97 +249,35 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
         """Manage options."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["defaults", "users_overrides", "abort_flow"],
+            menu_options=["defaults", "users_overrides"],
         )
-
-    def _default_label(self, key: str) -> str:
-        value = self._defaults.get(key, "")
-        return self._short(str(value))
 
     async def async_step_defaults(self, user_input=None):
         """Manage default options."""
-        return self.async_show_menu(
-            step_id="defaults",
-            menu_options={
-                "edit_default_model": (
-                    f"Default Model: {self._default_label(CONF_MODEL)}"
-                ),
-                "edit_default_timeout": (
-                    f"Timeout: {self._defaults.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)}"
-                ),
-                "edit_default_system_prompt": (
-                    "Default System Prompt: "
-                    f"{self._default_label(CONF_SYSTEM_PROMPT)}"
-                ),
-                "edit_default_session_key": (
-                    "Default Session Key: "
-                    f"{self._default_label(CONF_SESSION_KEY)}"
-                ),
-                "toggle_strip_emoji": (
-                    "Strip emojis: "
-                    f"{'On' if self._defaults.get(CONF_STRIP_EMOJI) else 'Off'}"
-                ),
-                "back_to_main": "← Back",
-                "abort_flow": "Cancel",
-            },
-        )
-
-    async def _async_default_field(self, key, step_id, user_input):
-        """Edit a single default field."""
         if user_input is not None:
-            value = user_input.get(key)
-            if key == CONF_TIMEOUT:
-                try:
-                    value = max(int(value), 0)
-                except (TypeError, ValueError):
-                    value = DEFAULT_TIMEOUT
-            else:
-                value = (value or "").strip()
-            self._defaults[key] = value
+            self._defaults = user_input
             self._persist()
-            return await self.async_step_defaults()
+            return await self.async_step_init()
         return self.async_show_form(
-            step_id=step_id,
+            step_id="defaults",
             data_schema=vol.Schema(
                 {
+                    vol.Required(CONF_MODEL, default=self._defaults[CONF_MODEL]): str,
                     vol.Optional(
-                        key, default=self._defaults.get(key, "")
-                    ): vol.Coerce(int) if key == CONF_TIMEOUT else str
+                        CONF_TIMEOUT, default=self._defaults[CONF_TIMEOUT]
+                    ): vol.Coerce(int),
+                    vol.Optional(
+                        CONF_SYSTEM_PROMPT, default=self._defaults[CONF_SYSTEM_PROMPT]
+                    ): str,
+                    vol.Optional(
+                        CONF_SESSION_KEY, default=self._defaults[CONF_SESSION_KEY]
+                    ): str,
+                    vol.Optional(
+                        CONF_STRIP_EMOJI, default=self._defaults[CONF_STRIP_EMOJI]
+                    ): bool,
                 }
             ),
         )
-
-    async def async_step_edit_default_model(self, user_input=None):
-        """Edit the default model."""
-        return await self._async_default_field(
-            CONF_MODEL, "edit_default_model", user_input
-        )
-
-    async def async_step_edit_default_timeout(self, user_input=None):
-        """Edit the default timeout."""
-        return await self._async_default_field(
-            CONF_TIMEOUT, "edit_default_timeout", user_input
-        )
-
-    async def async_step_edit_default_system_prompt(self, user_input=None):
-        """Edit the default system prompt."""
-        return await self._async_default_field(
-            CONF_SYSTEM_PROMPT, "edit_default_system_prompt", user_input
-        )
-
-    async def async_step_edit_default_session_key(self, user_input=None):
-        """Edit the default session key."""
-        return await self._async_default_field(
-            CONF_SESSION_KEY, "edit_default_session_key", user_input
-        )
-
-    async def async_step_toggle_strip_emoji(self, user_input=None):
-        """Toggle emoji stripping."""
-        self._defaults[CONF_STRIP_EMOJI] = not self._defaults.get(
-            CONF_STRIP_EMOJI, DEFAULT_STRIP_EMOJI
-        )
-        self._persist()
-        return await self.async_step_defaults()
 
     def _user_label(self, uid, users):
         for user in users:
@@ -371,7 +309,6 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
             if uid not in known_ids:
                 menu_options[f"user_{uid}"] = f"✓ {uid}"
         menu_options["back_to_main"] = "← Back"
-        menu_options["abort_flow"] = "Cancel"
         return self.async_show_menu(
             step_id="users_overrides",
             menu_options=menu_options,
@@ -389,17 +326,9 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
                 "edit_user_values": "Edit values",
                 "clear_user": "Clear user override",
                 "back_to_users": "← Back to users list",
-                "abort_flow": "Cancel",
             },
             description_placeholders={"user": self._user_label(uid, users)},
         )
-
-    @staticmethod
-    def _short(value: str) -> str:
-        """Shorten a value for menu display."""
-        if not value:
-            return "(default)"
-        return value if len(value) <= 40 else value[:37] + "..."
 
     async def async_step_edit_user_values(self, user_input=None):
         """Edit the values of the selected user override."""
@@ -407,66 +336,37 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
         if not uid:
             return await self.async_step_users_overrides()
         override = self._overrides.get(uid, {})
-        return self.async_show_menu(
-            step_id="edit_user_values",
-            menu_options={
-                "edit_model": f"Model: {self._short(override.get('model', ''))}",
-                "edit_session_key": (
-                    f"Session key: {self._short(override.get('session_key', ''))}"
-                ),
-                "edit_system_prompt": (
-                    f"System prompt: {self._short(override.get('system_prompt', ''))}"
-                ),
-                "back_to_user_menu": "← Back",
-                "abort_flow": "Cancel",
-            },
-        )
-
-    async def _async_edit_field(self, key, step_id, user_input):
-        """Edit a single override field."""
-        uid = getattr(self, "_edit_uid", None)
-        if not uid:
-            return await self.async_step_users_overrides()
         if user_input is not None:
-            value = (user_input.get(key) or "").strip()
-            override = dict(self._overrides.get(uid, {}))
-            if value:
-                override[key] = value
-            else:
-                override.pop(key, None)
-            if override:
-                self._overrides[uid] = override
+            new_override = {}
+            if user_input.get(CONF_MODEL):
+                new_override["model"] = user_input[CONF_MODEL]
+            if user_input.get(CONF_SESSION_KEY):
+                new_override["session_key"] = user_input[CONF_SESSION_KEY]
+            if user_input.get(CONF_SYSTEM_PROMPT):
+                new_override["system_prompt"] = user_input[CONF_SYSTEM_PROMPT]
+            if new_override:
+                self._overrides[uid] = new_override
             else:
                 self._overrides.pop(uid, None)
             self._persist()
-            return await self.async_step_edit_user_values()
-        override = self._overrides.get(uid, {})
+            return await self.async_step_user_menu()
         return self.async_show_form(
-            step_id=step_id,
+            step_id="edit_user_values",
             data_schema=vol.Schema(
-                {vol.Optional(key, default=override.get(key, "")): str}
+                {
+                    vol.Optional(
+                        CONF_MODEL, default=override.get("model", "")
+                    ): str,
+                    vol.Optional(
+                        CONF_SESSION_KEY, default=override.get("session_key", "")
+                    ): str,
+                    vol.Optional(
+                        CONF_SYSTEM_PROMPT,
+                        default=override.get("system_prompt", ""),
+                    ): str,
+                }
             ),
         )
-
-    async def async_step_edit_model(self, user_input=None):
-        """Edit the model override."""
-        return await self._async_edit_field(CONF_MODEL, "edit_model", user_input)
-
-    async def async_step_edit_session_key(self, user_input=None):
-        """Edit the session key override."""
-        return await self._async_edit_field(
-            CONF_SESSION_KEY, "edit_session_key", user_input
-        )
-
-    async def async_step_edit_system_prompt(self, user_input=None):
-        """Edit the system prompt override."""
-        return await self._async_edit_field(
-            CONF_SYSTEM_PROMPT, "edit_system_prompt", user_input
-        )
-
-    async def async_step_back_to_user_menu(self, user_input=None):
-        """Return to the user menu."""
-        return await self.async_step_user_menu()
 
     async def async_step_clear_user(self, user_input=None):
         """Clear the selected user override."""
@@ -483,10 +383,6 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_back_to_users(self, user_input=None):
         """Return to the users list."""
         return await self.async_step_users_overrides()
-
-    async def async_step_abort_flow(self, user_input=None):
-        """Close without changing already saved settings."""
-        return self.async_abort(reason="user_cancelled")
 
     def __getattr__(self, name):
         """Handle dynamic per-user steps."""

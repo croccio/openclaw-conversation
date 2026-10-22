@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" width="160" alt="OpenClaw Conversation">
+</p>
+
 # OpenClaw Conversation for Home Assistant
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange?style=flat-square)](https://hacs.xyz/)
