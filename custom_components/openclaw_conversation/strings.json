@@ -8,10 +8,10 @@
           "name": "Name",
           "base_url": "OpenClaw Gateway URL",
           "api_key": "API Token",
-          "model": "Model",
+          "model": "Default Model",
           "timeout": "Timeout (seconds, 0 = no limit)",
-          "system_prompt": "System prompt",
-          "session_key": "Session key",
+          "system_prompt": "Default System Prompt",
+          "session_key": "Default Session Key",
           "user_overrides": "User overrides (JSON)"
         },
         "data_description": {
@@ -38,16 +38,40 @@
       "init": {
         "title": "OpenClaw Conversation Options",
         "data": {
-          "model": "Model",
+          "model": "Default Model",
           "timeout": "Timeout (seconds, 0 = no limit)",
-          "system_prompt": "System prompt",
+          "system_prompt": "Default System Prompt",
           "strip_emoji": "Strip emojis from responses",
-          "session_key": "Session key",
-          "user_overrides": "User overrides (JSON)"
+          "session_key": "Default Session Key",
+          "user_overrides": "User overrides"
         },
         "data_description": {
           "timeout": "Set to 0 to disable the response timeout (recommended for long-running requests)",
           "user_overrides": "JSON object mapping HA user id/name to {model, session_key}"
+        }
+      },
+      "menu": {
+        "title": "OpenClaw Conversation Options",
+        "description": "Manage per-user overrides.",
+        "menu_options": {
+          "add_user": "Add user override",
+          "remove_user": "Remove user override",
+          "finish": "Finish"
+        }
+      },
+      "add_user": {
+        "title": "Add user override",
+        "data": {
+          "user": "User",
+          "model": "Model",
+          "session_key": "Session key",
+          "system_prompt": "System prompt"
+        }
+      },
+      "remove_user": {
+        "title": "Remove user override",
+        "data": {
+          "user": "User"
         }
       }
     }

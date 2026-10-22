@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 
 import aiohttp
@@ -189,7 +190,7 @@ class OpenClawConversationConfigFlow(
                         CONF_BASE_URL, default=DEFAULT_BASE_URL
                     ): str,
                     vol.Required(CONF_API_KEY): str,
-                    vol.Optional(
+                    vol.Required(
                         CONF_MODEL, default=DEFAULT_MODEL
                     ): str,
                     vol.Optional(
@@ -216,67 +217,117 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self._config_entry = config_entry
+        entry_overrides = config_entry.options.get(
+            CONF_USER_OVERRIDES,
+            config_entry.data.get(CONF_USER_OVERRIDES, DEFAULT_USER_OVERRIDES),
+        )
+        if isinstance(entry_overrides, dict):
+            self._overrides = dict(entry_overrides)
+        elif isinstance(entry_overrides, str) and entry_overrides.strip():
+            try:
+                parsed = json.loads(entry_overrides)
+                self._overrides = parsed if isinstance(parsed, dict) else {}
+            except (json.JSONDecodeError, TypeError, ValueError):
+                self._overrides = {}
+        else:
+            self._overrides = {}
+        self._defaults = {
+            CONF_MODEL: config_entry.options.get(
+                CONF_MODEL, config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+            ),
+            CONF_TIMEOUT: config_entry.options.get(
+                CONF_TIMEOUT, config_entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+            ),
+            CONF_SYSTEM_PROMPT: config_entry.options.get(
+                CONF_SYSTEM_PROMPT,
+                config_entry.data.get(CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT),
+            ),
+            CONF_SESSION_KEY: config_entry.options.get(
+                CONF_SESSION_KEY,
+                config_entry.data.get(CONF_SESSION_KEY, DEFAULT_SESSION_KEY),
+            ),
+            CONF_STRIP_EMOJI: config_entry.options.get(
+                CONF_STRIP_EMOJI, DEFAULT_STRIP_EMOJI
+            ),
+        }
 
     async def async_step_init(self, user_input=None):
-        """Manage the options."""
+        """Manage default options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-
+            self._defaults = user_input
+            return await self.async_step_menu()
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(CONF_MODEL, default=self._defaults[CONF_MODEL]): str,
                     vol.Optional(
-                        CONF_MODEL,
-                        default=self._config_entry.options.get(
-                            CONF_MODEL,
-                            self._config_entry.data.get(
-                                CONF_MODEL, DEFAULT_MODEL
-                            ),
-                        ),
-                    ): str,
-                    vol.Optional(
-                        CONF_TIMEOUT,
-                        default=self._config_entry.options.get(
-                            CONF_TIMEOUT,
-                            self._config_entry.data.get(
-                                CONF_TIMEOUT, DEFAULT_TIMEOUT
-                            ),
-                        ),
+                        CONF_TIMEOUT, default=self._defaults[CONF_TIMEOUT]
                     ): vol.Coerce(int),
                     vol.Optional(
-                        CONF_SYSTEM_PROMPT,
-                        default=self._config_entry.options.get(
-                            CONF_SYSTEM_PROMPT,
-                            self._config_entry.data.get(
-                                CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT
-                            ),
-                        ),
+                        CONF_SYSTEM_PROMPT, default=self._defaults[CONF_SYSTEM_PROMPT]
                     ): str,
                     vol.Optional(
-                        CONF_SESSION_KEY,
-                        default=self._config_entry.options.get(
-                            CONF_SESSION_KEY,
-                            self._config_entry.data.get(
-                                CONF_SESSION_KEY, DEFAULT_SESSION_KEY
-                            ),
-                        ),
+                        CONF_SESSION_KEY, default=self._defaults[CONF_SESSION_KEY]
                     ): str,
                     vol.Optional(
-                        CONF_USER_OVERRIDES,
-                        default=self._config_entry.options.get(
-                            CONF_USER_OVERRIDES,
-                            self._config_entry.data.get(
-                                CONF_USER_OVERRIDES, DEFAULT_USER_OVERRIDES
-                            ),
-                        ),
-                    ): str,
-                    vol.Optional(
-                        CONF_STRIP_EMOJI,
-                        default=self._config_entry.options.get(
-                            CONF_STRIP_EMOJI, DEFAULT_STRIP_EMOJI
-                        ),
+                        CONF_STRIP_EMOJI, default=self._defaults[CONF_STRIP_EMOJI]
                     ): bool,
                 }
             ),
         )
+
+    async def async_step_menu(self, user_input=None):
+        """Manage per-user overrides."""
+        return self.async_show_menu(
+            step_id="menu",
+            menu_options=["add_user", "remove_user", "finish"],
+        )
+
+    async def async_step_add_user(self, user_input=None):
+        """Add a per-user override."""
+        users = self.hass.auth.async_get_users()
+        user_options = {u.id: (u.name or u.id) for u in users}
+        if user_input is not None:
+            uid = user_input["user"]
+            override = {}
+            if user_input.get(CONF_MODEL):
+                override["model"] = user_input[CONF_MODEL]
+            if user_input.get(CONF_SESSION_KEY):
+                override["session_key"] = user_input[CONF_SESSION_KEY]
+            if user_input.get(CONF_SYSTEM_PROMPT):
+                override["system_prompt"] = user_input[CONF_SYSTEM_PROMPT]
+            self._overrides[uid] = override
+            return await self.async_step_menu()
+        return self.async_show_form(
+            step_id="add_user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("user"): vol.In(user_options),
+                    vol.Optional(CONF_MODEL): str,
+                    vol.Optional(CONF_SESSION_KEY): str,
+                    vol.Optional(CONF_SYSTEM_PROMPT): str,
+                }
+            ),
+        )
+
+    async def async_step_remove_user(self, user_input=None):
+        """Remove a per-user override."""
+        if not self._overrides:
+            return await self.async_step_menu()
+        choices = {uid: uid for uid in self._overrides}
+        if user_input is not None:
+            self._overrides.pop(user_input["user"], None)
+            return await self.async_step_menu()
+        return self.async_show_form(
+            step_id="remove_user",
+            data_schema=vol.Schema(
+                {vol.Required("user"): vol.In(choices)}
+            ),
+        )
+
+    async def async_step_finish(self, user_input=None):
+        """Finish and save."""
+        data = dict(self._defaults)
+        data[CONF_USER_OVERRIDES] = self._overrides
+        return self.async_create_entry(title="", data=data)

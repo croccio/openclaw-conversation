@@ -227,6 +227,7 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
                 )
 
         effective_model = override.get("model") or self._model
+        effective_system_prompt = override.get("system_prompt") or self._system_prompt
         if override.get("session_key"):
             effective_session_key = override["session_key"]
         elif uid:
@@ -244,9 +245,9 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
         api_messages = []
 
         # Global system prompt always at the top (if configured).
-        if self._system_prompt:
+        if effective_system_prompt:
             api_messages.append(
-                {"role": "system", "content": self._system_prompt}
+                {"role": "system", "content": effective_system_prompt}
             )
 
         # Prefix the HA user's name to the message sent to OpenClaw.
