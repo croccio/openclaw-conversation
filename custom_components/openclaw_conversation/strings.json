@@ -37,17 +37,12 @@
     "step": {
       "init": {
         "title": "OpenClaw Conversation Options",
-        "data": {
-          "model": "Default Model",
-          "timeout": "Timeout (seconds, 0 = no limit)",
-          "system_prompt": "Default System Prompt",
-          "strip_emoji": "Strip emojis from responses",
-          "session_key": "Default Session Key",
-          "user_overrides": "User overrides"
-        },
-        "data_description": {
-          "timeout": "Set to 0 to disable the response timeout (recommended for long-running requests)",
-          "user_overrides": "JSON object mapping HA user id/name to {model, session_key}"
+        "description": "Manage defaults and per-user overrides.",
+        "menu_options": {
+          "defaults": "Default settings",
+          "add_user": "Add user override",
+          "remove_user": "Remove user override",
+          "finish": "Finish"
         }
       },
       "menu": {
@@ -72,6 +67,16 @@
         "title": "Remove user override",
         "data": {
           "user": "User"
+        }
+      },
+      "defaults": {
+        "title": "Default settings",
+        "data": {
+          "model": "Default Model",
+          "timeout": "Timeout (seconds, 0 = no limit)",
+          "system_prompt": "Default System Prompt",
+          "session_key": "Default Session Key",
+          "strip_emoji": "Strip emojis from responses"
         }
       }
     }

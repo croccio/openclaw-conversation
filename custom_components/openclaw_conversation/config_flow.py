@@ -252,12 +252,19 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
         }
 
     async def async_step_init(self, user_input=None):
+        """Manage options."""
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=["defaults", "add_user", "remove_user", "finish"],
+        )
+
+    async def async_step_defaults(self, user_input=None):
         """Manage default options."""
         if user_input is not None:
             self._defaults = user_input
-            return await self.async_step_menu()
+            return await self.async_step_init()
         return self.async_show_form(
-            step_id="init",
+            step_id="defaults",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_MODEL, default=self._defaults[CONF_MODEL]): str,
@@ -280,8 +287,8 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_menu(self, user_input=None):
         """Manage per-user overrides."""
         return self.async_show_menu(
-            step_id="menu",
-            menu_options=["add_user", "remove_user", "finish"],
+            step_id="init",
+            menu_options=["defaults", "add_user", "remove_user", "finish"],
         )
 
     async def async_step_add_user(self, user_input=None):
@@ -298,7 +305,7 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
             if user_input.get(CONF_SYSTEM_PROMPT):
                 override["system_prompt"] = user_input[CONF_SYSTEM_PROMPT]
             self._overrides[uid] = override
-            return await self.async_step_menu()
+            return await self.async_step_init()
         return self.async_show_form(
             step_id="add_user",
             data_schema=vol.Schema(
@@ -314,11 +321,11 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_remove_user(self, user_input=None):
         """Remove a per-user override."""
         if not self._overrides:
-            return await self.async_step_menu()
+            return await self.async_step_init()
         choices = {uid: uid for uid in self._overrides}
         if user_input is not None:
             self._overrides.pop(user_input["user"], None)
-            return await self.async_step_menu()
+            return await self.async_step_init()
         return self.async_show_form(
             step_id="remove_user",
             data_schema=vol.Schema(
