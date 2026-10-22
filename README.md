@@ -65,10 +65,17 @@ Copy `custom_components/openclaw_conversation` into your HA `config/custom_compo
 | Name | Display name (e.g. "OpenClaw") |
 | Gateway URL | `http://<gateway-ip>:<port>` (e.g. `http://192.168.1.100:18789`) |
 | API Token | Your gateway auth token |
-| Model | `openclaw:main` (default) — must match a model that exists on your gateway |
-| Timeout | `30` seconds |
+| Default Model | `openclaw:main` (default) — must match a model that exists on your gateway |
+| Timeout | `0` = no limit (recommended for long requests) |
 
-### 2. Set up a Voice Assistant
+### 2. Options (per-user overrides)
+
+Open the integration → **Configure**:
+
+- **Default settings**: default model, timeout, system prompt, session key, emoji stripping.
+- **Users Overrides**: list of HA users; select one to set per-user `model`, `session_key`, `system_prompt` (empty = default). A `✓` marks users with overrides; use **Clear** / `✕` to remove.
+
+### 3. Set up a Voice Assistant
 
 **Settings > Voice Assistants** > create or edit an assistant:
 
@@ -77,11 +84,11 @@ Copy `custom_components/openclaw_conversation` into your HA `config/custom_compo
 - **Text-to-Speech**: Piper, Google Translate, or HA Cloud
 - **Wake word**: e.g. "Ok Nabu" via openWakeWord
 
-### 3. Assign to a voice device
+### 4. Assign to a voice device
 
 For HA Voice PE or other satellites: set **Preferred Assistant** to your OpenClaw assistant in the device settings.
 
-### 4. Test it
+### 5. Test it
 
 Say the wake word and speak, or use **Voice Assistants > Start a conversation** to test via text.
 

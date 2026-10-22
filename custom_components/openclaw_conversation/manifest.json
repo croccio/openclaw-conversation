@@ -1,12 +1,18 @@
 {
   "domain": "openclaw_conversation",
   "name": "OpenClaw Conversation",
-  "codeowners": ["@nicoglg"],
+  "codeowners": [
+    "@croccio"
+  ],
   "config_flow": true,
-  "dependencies": ["conversation"],
-  "documentation": "https://github.com/nicoglg/openclaw-conversation",
+  "dependencies": [
+    "conversation"
+  ],
+  "documentation": "https://github.com/croccio/openclaw-conversation",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "requirements": ["aiohttp>=3.8.0"],
-  "version": "0.4.2"
+  "requirements": [
+    "aiohttp>=3.8.0"
+  ],
+  "version": "1.0.0-beta1"
 }
