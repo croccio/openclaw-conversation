@@ -5,9 +5,9 @@
 # OpenClaw Conversation for Home Assistant
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange?style=flat-square)](https://hacs.xyz/)
-[![GitHub Release](https://img.shields.io/github/v/release/nicolasglg/openclaw-conversation?style=flat-square)](https://github.com/nicolasglg/openclaw-conversation/releases)
-[![License](https://img.shields.io/github/license/nicolasglg/openclaw-conversation?style=flat-square)](LICENSE)
-[![Buy Me A Beer](https://img.shields.io/badge/Buy%20Me%20A%20Beer-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/nicolasglg)
+[![GitHub Release](https://img.shields.io/github/v/release/croccio/openclaw-conversation?style=flat-square)](https://github.com/croccio/openclaw-conversation/releases)
+[![License](https://img.shields.io/github/license/croccio/openclaw-conversation?style=flat-square)](LICENSE)
+[![Buy Me A Beer](https://img.shields.io/badge/Buy%20Me%20A%20Beer-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://www.paypal.com/donate/?hosted_button_id=GCAKP47NKYE2E)
 
 **Turn your [OpenClaw](https://openclaw.ai) agent into a Home Assistant voice assistant.**
 
@@ -49,7 +49,7 @@ Say a wake word, ask a question, get a spoken answer — powered by your own Ope
 
 1. Open HACS in Home Assistant
 2. Click the 3 dots menu > **Custom repositories**
-3. Add `nicolasglg/openclaw-conversation` as **Integration**
+3. Add `croccio/openclaw-conversation` as **Integration**
 4. Search for and install **OpenClaw Conversation**
 5. Restart Home Assistant
 6. Go to **Settings** > **Integrations** > **Add Integration** > **OpenClaw Conversation**
@@ -181,7 +181,7 @@ OpenClaw backends that understand these fields can use them for routing or sessi
 
 Like it? Found it useful?
 
-[![Buy Me A Beer](https://img.shields.io/badge/Buy%20Me%20A%20Beer-☕%20Support%20this%20project-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/nicolasglg)
+[![Buy Me A Beer](https://img.shields.io/badge/Buy%20Me%20A%20Beer-☕%20Support%20this%20project-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://www.paypal.com/donate/?hosted_button_id=GCAKP47NKYE2E)
 
 ## Links
 
