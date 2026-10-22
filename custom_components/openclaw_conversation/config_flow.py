@@ -249,12 +249,14 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
         """Manage options."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["defaults", "add_user", "remove_user", "finish"],
+            menu_options=["defaults", "users_overrides", "finish"],
         )
 
     async def async_step_defaults(self, user_input=None):
         """Manage default options."""
         if user_input is not None:
+            if user_input.pop("back", False):
+                return await self.async_step_init()
             self._defaults = user_input
             return await self.async_step_init()
         return self.async_show_form(
@@ -274,61 +276,107 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_STRIP_EMOJI, default=self._defaults[CONF_STRIP_EMOJI]
                     ): bool,
+                    vol.Optional("back", default=False): bool,
                 }
             ),
         )
 
-    async def async_step_menu(self, user_input=None):
-        """Manage per-user overrides."""
+    def _user_label(self, uid, users):
+        for user in users:
+            if user.id == uid:
+                return user.name or uid
+        return uid
+
+    async def async_step_users_overrides(self, user_input=None):
+        """List users and their override state."""
+        users = await self.hass.auth.async_get_users()
+        menu_options = {}
+        for user in users:
+            label = user.name or user.id
+            if user.id in self._overrides:
+                label = f"✓ {label}"
+            menu_options[f"user_{user.id}"] = label
+        known_ids = {user.id for user in users}
+        for uid in list(self._overrides):
+            if uid not in known_ids:
+                menu_options[f"user_{uid}"] = f"✓ {uid}"
+            menu_options[f"clear_{uid}"] = f"✕ Clear {self._user_label(uid, users)}"
+        menu_options["back"] = "← Back"
         return self.async_show_menu(
-            step_id="init",
-            menu_options=["defaults", "add_user", "remove_user", "finish"],
+            step_id="users_overrides",
+            menu_options=menu_options,
         )
 
-    async def async_step_add_user(self, user_input=None):
-        """Add a per-user override."""
-        users = await self.hass.auth.async_get_users()
-        user_options = {u.id: (u.name or u.id) for u in users}
+    async def async_step_edit_user(self, user_input=None):
+        """Edit a user override."""
+        uid = getattr(self, "_edit_uid", None)
+        if not uid:
+            return await self.async_step_users_overrides()
+        override = self._overrides.get(uid, {})
         if user_input is not None:
-            uid = user_input["user"]
-            override = {}
+            if user_input.pop("back", False):
+                return await self.async_step_users_overrides()
+            if user_input.pop("clear", False):
+                self._overrides.pop(uid, None)
+                return await self.async_step_users_overrides()
+            new_override = {}
             if user_input.get(CONF_MODEL):
-                override["model"] = user_input[CONF_MODEL]
+                new_override["model"] = user_input[CONF_MODEL]
             if user_input.get(CONF_SESSION_KEY):
-                override["session_key"] = user_input[CONF_SESSION_KEY]
+                new_override["session_key"] = user_input[CONF_SESSION_KEY]
             if user_input.get(CONF_SYSTEM_PROMPT):
-                override["system_prompt"] = user_input[CONF_SYSTEM_PROMPT]
-            self._overrides[uid] = override
-            return await self.async_step_init()
+                new_override["system_prompt"] = user_input[CONF_SYSTEM_PROMPT]
+            if new_override:
+                self._overrides[uid] = new_override
+            else:
+                self._overrides.pop(uid, None)
+            return await self.async_step_users_overrides()
         return self.async_show_form(
-            step_id="add_user",
+            step_id="edit_user",
             data_schema=vol.Schema(
                 {
-                    vol.Required("user"): vol.In(user_options),
-                    vol.Optional(CONF_MODEL): str,
-                    vol.Optional(CONF_SESSION_KEY): str,
-                    vol.Optional(CONF_SYSTEM_PROMPT): str,
+                    vol.Optional(
+                        CONF_MODEL, default=override.get("model", "")
+                    ): str,
+                    vol.Optional(
+                        CONF_SESSION_KEY, default=override.get("session_key", "")
+                    ): str,
+                    vol.Optional(
+                        CONF_SYSTEM_PROMPT,
+                        default=override.get("system_prompt", ""),
+                    ): str,
+                    vol.Optional("clear", default=False): bool,
+                    vol.Optional("back", default=False): bool,
                 }
             ),
         )
 
-    async def async_step_remove_user(self, user_input=None):
-        """Remove a per-user override."""
-        if not self._overrides:
-            return await self.async_step_init()
-        choices = {uid: uid for uid in self._overrides}
-        if user_input is not None:
-            self._overrides.pop(user_input["user"], None)
-            return await self.async_step_init()
-        return self.async_show_form(
-            step_id="remove_user",
-            data_schema=vol.Schema(
-                {vol.Required("user"): vol.In(choices)}
-            ),
-        )
+    async def async_step_back(self, user_input=None):
+        """Return to the main menu."""
+        return await self.async_step_init()
 
     async def async_step_finish(self, user_input=None):
         """Finish and save."""
         data = dict(self._defaults)
         data[CONF_USER_OVERRIDES] = self._overrides
         return self.async_create_entry(title="", data=data)
+
+    def __getattr__(self, name):
+        """Handle dynamic per-user steps."""
+        if name.startswith("async_step_user_"):
+            uid = name[len("async_step_user_"):]
+
+            async def handler(user_input=None):
+                self._edit_uid = uid
+                return await self.async_step_edit_user(user_input)
+
+            return handler
+        if name.startswith("async_step_clear_"):
+            uid = name[len("async_step_clear_"):]
+
+            async def clear_handler(user_input=None):
+                self._overrides.pop(uid, None)
+                return await self.async_step_users_overrides()
+
+            return clear_handler
+        raise AttributeError(name)
