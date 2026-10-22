@@ -287,7 +287,7 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_add_user(self, user_input=None):
         """Add a per-user override."""
-        users = self.hass.auth.async_get_users()
+        users = await self.hass.auth.async_get_users()
         user_options = {u.id: (u.name or u.id) for u in users}
         if user_input is not None:
             uid = user_input["user"]
