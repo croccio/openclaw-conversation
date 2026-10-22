@@ -313,7 +313,7 @@ class OpenClawOptionsFlowHandler(config_entries.OptionsFlow):
             step_id="user_menu",
             menu_options={
                 "edit_user_values": "Edit values",
-                "clear_user": "Clear override",
+                "clear_user": "Clear user override",
                 "back_to_users": "← Back to users list",
             },
             description_placeholders={"user": self._user_label(uid, users)},
