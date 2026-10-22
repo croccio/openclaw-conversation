@@ -41,7 +41,7 @@
         "menu_options": {
           "defaults": "Default settings",
           "users_overrides": "Users Overrides",
-          "cancel": "Cancel"
+          "abort_flow": "Cancel"
         }
       },
       "users_overrides": {
@@ -54,21 +54,52 @@
       },
       "edit_user_values": {
         "title": "User override values",
-        "description": "Leave a field empty to use the default value.",
-        "data": {
-          "model": "Model",
-          "session_key": "Session key",
-          "system_prompt": "System prompt"
-        }
+        "description": "Select a value to edit. Changes are saved immediately. Use Cancel to close."
       },
       "defaults": {
         "title": "Default settings",
+        "description": "Select a value to edit. Changes are saved immediately."
+      },
+      "edit_model": {
+        "title": "Model override",
         "data": {
-          "model": "Default Model",
-          "timeout": "Timeout (seconds, 0 = no limit)",
-          "system_prompt": "Default System Prompt",
-          "session_key": "Default Session Key",
-          "strip_emoji": "Strip emojis from responses"
+          "model": "Model"
+        }
+      },
+      "edit_session_key": {
+        "title": "Session key override",
+        "data": {
+          "session_key": "Session key"
+        }
+      },
+      "edit_system_prompt": {
+        "title": "System prompt override",
+        "data": {
+          "system_prompt": "System prompt"
+        }
+      },
+      "edit_default_model": {
+        "title": "Default Model",
+        "data": {
+          "model": "Default Model"
+        }
+      },
+      "edit_default_timeout": {
+        "title": "Timeout",
+        "data": {
+          "timeout": "Timeout (seconds, 0 = no limit)"
+        }
+      },
+      "edit_default_system_prompt": {
+        "title": "Default System Prompt",
+        "data": {
+          "system_prompt": "Default System Prompt"
+        }
+      },
+      "edit_default_session_key": {
+        "title": "Default Session Key",
+        "data": {
+          "session_key": "Default Session Key"
         }
       }
     },

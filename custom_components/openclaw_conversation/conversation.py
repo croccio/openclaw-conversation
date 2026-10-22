@@ -62,7 +62,9 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
 
         raw_overrides = config.get(CONF_USER_OVERRIDES, DEFAULT_USER_OVERRIDES) or ""
         self._user_overrides = {}
-        if raw_overrides:
+        if isinstance(raw_overrides, dict):
+            self._user_overrides = dict(raw_overrides)
+        elif isinstance(raw_overrides, str) and raw_overrides.strip():
             try:
                 parsed = json_mod.loads(raw_overrides)
                 if isinstance(parsed, dict):
