@@ -173,9 +173,6 @@ class OpenClawConversationConfigFlow(
                         CONF_SESSION_KEY: user_input.get(
                             CONF_SESSION_KEY, DEFAULT_SESSION_KEY
                         ),
-                        CONF_USER_OVERRIDES: user_input.get(
-                            CONF_USER_OVERRIDES, DEFAULT_USER_OVERRIDES
-                        ),
                     },
                 )
 
@@ -201,9 +198,6 @@ class OpenClawConversationConfigFlow(
                     ): str,
                     vol.Optional(
                         CONF_SESSION_KEY, default=DEFAULT_SESSION_KEY
-                    ): str,
-                    vol.Optional(
-                        CONF_USER_OVERRIDES, default=DEFAULT_USER_OVERRIDES
                     ): str,
                 }
             ),
