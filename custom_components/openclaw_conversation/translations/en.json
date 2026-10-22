@@ -41,7 +41,7 @@
         "menu_options": {
           "defaults": "Default settings",
           "users_overrides": "Users Overrides",
-          "finish": "Finish"
+          "cancel": "Cancel"
         }
       },
       "users_overrides": {
@@ -71,6 +71,9 @@
           "strip_emoji": "Strip emojis from responses"
         }
       }
+    },
+    "abort": {
+      "user_cancelled": "Cancelled. Already saved settings were kept."
     }
   }
 }
